@@ -6,17 +6,24 @@ local wp = {}
 local function load_database(root)
   local index = 1
   local db = {}
-  for line in io.lines(root .. "/.db") do
-    -- Timestamps are of no use here
-    for timestamp, width, height, path in string.gmatch(line, "([%d]+):([%d]+):([%d]+) (.+)") do
-      db[index] = {}
-      db[index].width = tonumber(width)
-      db[index].height = tonumber(height)
-      db[index].path = path
-      index = index + 1
+  local lines
+  if pcall(function() lines = io.lines(root .. "/.db") end) then
+    for line in lines do
+      -- Timestamps are of no use here
+      for timestamp, width, height, path in string.gmatch(line, "([%d]+):([%d]+):([%d]+) (.+)") do
+        db[index] = {}
+        db[index].width = tonumber(width)
+        db[index].height = tonumber(height)
+        db[index].path = path
+        index = index + 1
+      end
     end
+    return db
+  else
+    local naughty = require("naughty")
+    naughty.notify({title = "Wallpaper database error", text = "Cannot load database from " .. root .. "\n Maybe you should rebuild the database"} )
+    return {}
   end
-  return db
 end
 
 -- Filter images loaded from database
