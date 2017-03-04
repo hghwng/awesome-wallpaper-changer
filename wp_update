@@ -1,0 +1,58 @@
+#!/bin/bash
+
+declare -A PREV_DB
+
+function get_meta() {
+    local imgpath=$1
+    local old_record=${PREV_DB[$imgpath]}
+
+    # Return cached entry if timestamp equals
+    local old_timestamp=${old_record%%:*}
+    local new_timestamp=`stat -c %Y "$imgpath" 2>/dev/null` || return -1
+    if [[ x$old_timestamp == x$new_timestamp ]]; then
+        echo $old_record;
+        return 0
+    fi
+
+    # Generate a new entry
+    local geo
+    geo=`identify -format '%w:%h' "$imgpath" 2>/dev/null` || return -2
+    echo $new_timestamp:$geo $imgpath
+    return 1
+}
+
+function parse_db() {
+    local dbpath=$1
+    [[ -e $dbpath ]] || return
+    local line
+    while read line; do
+        local imgpath=${line##* }
+        PREV_DB[$imgpath]=$line
+    done < $dbpath
+}
+
+function update_db() {
+    local dbpath=$1
+    local imgpath
+    local new_record
+
+    > $dbpath
+    find -not -path '*/.*' -type f | while read imgpath; do
+        new_record=$(get_meta $imgpath)
+        local status=$?
+        if [[ $status -le 200 ]]; then
+            echo $new_record >> $dbpath
+        else
+            echo Invalid image $imgpath
+        fi
+    done
+}
+
+if [[ x$1 == x ]]; then
+    echo "Usage: $0 WALLPAPER_DIRECTORY"
+    exit 1
+fi
+
+cd $1
+parse_db .db
+update_db .db
