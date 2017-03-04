@@ -58,17 +58,22 @@ end
 --   setter: a function that actually set the wallpaper
 local function prepare(settings)
   local images = load_database(settings.root)
-  local filters = settings.filters or { wp.filter_by_ratio(0.5) }
+  local filters = settings.filters or { wp.filter_by_ratio(0.8) }
   local setter = settings.setter or wp.set_maximized
   return images, filters, setter
 end
 
 -- Ignore images whose ratio significantly differ from the screen ratio
-function wp.filter_by_ratio(max_diff)
+-- max_factor <= 1: When the image is fitted to the max size to the screen, how
+-- much space is allowed to be blank
+function wp.filter_by_ratio(min_factor)
   local naughty = require("naughty")
   return function(s, image_idx, image)
     local geometry = screen[s].geometry
-    return math.abs(image.width / image.height - geometry.width / geometry.height) < max_diff
+    local fit_width_factor = geometry.width / image.width * image.height / geometry.height
+    local fit_height_factor = geometry.height / image.height * image.width / geometry.width
+    local fit_factor = math.min(fit_width_factor, fit_height_factor)
+    return fit_factor > min_factor
   end
 end
 
