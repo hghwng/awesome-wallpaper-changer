@@ -4,12 +4,12 @@ local wp = {}
 
 -- Load wallpaper database from file
 local function load_database(root)
-  local index = 0
+  local index = 1
   local db = {}
   for line in io.lines(root .. "/.db") do
-    db[index] = {}
     -- Timestamps are of no use here
     for timestamp, width, height, path in string.gmatch(line, "([%d]+):([%d]+):([%d]+) (.+)") do
+      db[index] = {}
       db[index].width = tonumber(width)
       db[index].height = tonumber(height)
       db[index].path = path
@@ -22,7 +22,7 @@ end
 -- Filter images loaded from database
 local function filter_image(s, images, filters)
   local output = {}
-  local output_idx = 0
+  local output_idx = 1
   for image_idx, image in pairs(images) do
     -- Only allow images that pass the check
     local pass = true
@@ -51,7 +51,7 @@ end
 --   setter: a function that actually set the wallpaper
 local function prepare(settings)
   local images = load_database(settings.root)
-  local filters = settings.filters or { wp.filter_by_ratio(1) }
+  local filters = settings.filters or { wp.filter_by_ratio(0.5) }
   local setter = settings.setter or wp.set_maximized
   return images, filters, setter
 end
